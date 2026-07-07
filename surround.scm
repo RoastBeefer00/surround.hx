@@ -8,11 +8,9 @@
 
 (require-builtin helix/core/text)
 
-;; Import shared utilities from the vim plugin.
-;; Paths resolve relative to this file's installed location (~/.config/helix/surround.hx/),
-;; so ../vim/ points at ~/.config/helix/vim/ where the vim plugin lives.
-(require "../vim/utils.scm")
-(require "../vim/visual-motions.scm")
+;; Import shared utilities from the vim plugin (forge-installed to ../vim.hx/).
+(require "../vim.hx/utils.scm")
+(require "../vim.hx/visual-motions.scm")
 
 ;;; ---- Char pair mapping ----
 
