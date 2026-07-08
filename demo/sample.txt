@@ -1,0 +1,7 @@
+let greeting = "hello"
+let items = [one, two, three]
+return value
+let message = hello, world
+<div>some content here</div>
+<span>styled text</span>
+click here
