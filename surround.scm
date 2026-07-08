@@ -187,7 +187,7 @@
                (move-to-position close-pos)
                (helix.static.replace-selection-with "")
                (move-to-position open-pos)
-               (helix.static.replace-selection-with "")))))))))
+               (helix.static.replace-selection-with ""))))))))
 
 
 ;;; ---- cs{old}{new} — change surrounding pair ----
