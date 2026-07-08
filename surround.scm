@@ -107,9 +107,11 @@
          (find-ancestor-of-kind leaf "element"))))
 
 ;; Select a char range [start, end] (both inclusive) and replace with str.
+;; Helix ranges are half-open (head/`to` is exclusive), so we pass end+1 to
+;; include the final character — otherwise the last char is left behind.
 (define (replace-char-range! start end str)
   (helix.static.set-current-selection-object!
-    (helix.static.range->selection (helix.static.range start end)))
+    (helix.static.range->selection (helix.static.range start (+ end 1))))
   (helix.static.replace-selection-with str))
 
 ;; Trim leading and trailing whitespace from a string.
