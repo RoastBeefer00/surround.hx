@@ -15,6 +15,9 @@ Set TypingSpeed 80ms
 Type "cd demo && hx sample.txt"
 Enter
 Sleep 2s
+Type ":showkeys-toggle"
+Enter
+Sleep 200ms
 
 # ── ds" : delete surrounding quotes ─────────────────────────────────────────
 # line 1: let greeting = "hello"
