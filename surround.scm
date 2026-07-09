@@ -138,12 +138,34 @@
 
 ;;; ---- dst — delete surrounding HTML/XML tag ----
 
-;; If the char right after `end` (an inclusive last-char index) is a newline,
-;; return end+1 so the deletion swallows it — collapsing the line the tag was
-;; on when unwrapping a block-level element.
-(define (extend-over-trailing-newline rope end)
-  (define next (rope-char-ref rope (+ end 1)))
-  (if (and next (char=? next #\newline)) (+ end 1) end))
+;; Compute the [start . end] (inclusive) char range to delete for a tag that
+;; spans [tag-start, tag-end]. If the tag is alone on its line (only whitespace
+;; before it, and only whitespace up to the next newline after it), remove the
+;; whole line — leading indentation and trailing newline included — so
+;; unwrapping a block element doesn't leave a blank/mis-indented line. Otherwise
+;; (an inline tag) delete just the tag itself.
+(define (tag-delete-range rope tag-start tag-end)
+  (define line (rope-char->line rope tag-start))
+  (define line-start (rope-line->char rope line))
+  (define ws-before?
+    (let loop ([i line-start])
+      (cond
+        [(>= i tag-start) #t]
+        [(char-whitespace? (rope-char-ref rope i)) (loop (+ i 1))]
+        [else #f])))
+  ;; Scan forward from just after the tag: the trailing newline index if only
+  ;; whitespace follows, #f otherwise (inline, or end of buffer).
+  (define trailing-newline
+    (let loop ([i (+ tag-end 1)])
+      (define ch (rope-char-ref rope i))
+      (cond
+        [(not ch) #f]
+        [(char=? ch #\newline) i]
+        [(char-whitespace? ch) (loop (+ i 1))]
+        [else #f])))
+  (if (and ws-before? trailing-newline)
+      (cons line-start trailing-newline)   ; whole line + its newline
+      (cons tag-start tag-end)))           ; just the tag
 
 (define (surround-delete-tag)
   (define rope (ts-current-rope))
@@ -152,15 +174,15 @@
     (define start-tag (find-named-child element *start-tag-kinds*))
     (define end-tag   (find-named-child element *end-tag-kinds*))
     (when (and start-tag end-tag)
-      (define st-start (rope-byte->char rope (tsnode-start-byte start-tag)))
-      (define st-end   (extend-over-trailing-newline
-                         rope (- (rope-byte->char rope (tsnode-end-byte start-tag)) 1)))
-      (define et-start (rope-byte->char rope (tsnode-start-byte end-tag)))
-      (define et-end   (extend-over-trailing-newline
-                         rope (- (rope-byte->char rope (tsnode-end-byte end-tag)) 1)))
+      (define st (tag-delete-range rope
+                   (rope-byte->char rope (tsnode-start-byte start-tag))
+                   (- (rope-byte->char rope (tsnode-end-byte start-tag)) 1)))
+      (define et (tag-delete-range rope
+                   (rope-byte->char rope (tsnode-start-byte end-tag))
+                   (- (rope-byte->char rope (tsnode-end-byte end-tag)) 1)))
       ;; Delete end tag first so start tag positions stay valid
-      (replace-char-range! et-start et-end "")
-      (replace-char-range! st-start st-end ""))))
+      (replace-char-range! (car et) (cdr et) "")
+      (replace-char-range! (car st) (cdr st) ""))))
 
 ;;; ---- cst — change surrounding HTML/XML tag name ----
 
