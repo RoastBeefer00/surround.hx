@@ -138,6 +138,13 @@
 
 ;;; ---- dst — delete surrounding HTML/XML tag ----
 
+;; If the char right after `end` (an inclusive last-char index) is a newline,
+;; return end+1 so the deletion swallows it — collapsing the line the tag was
+;; on when unwrapping a block-level element.
+(define (extend-over-trailing-newline rope end)
+  (define next (rope-char-ref rope (+ end 1)))
+  (if (and next (char=? next #\newline)) (+ end 1) end))
+
 (define (surround-delete-tag)
   (define rope (ts-current-rope))
   (define element (enclosing-element))
@@ -146,9 +153,11 @@
     (define end-tag   (find-named-child element *end-tag-kinds*))
     (when (and start-tag end-tag)
       (define st-start (rope-byte->char rope (tsnode-start-byte start-tag)))
-      (define st-end   (- (rope-byte->char rope (tsnode-end-byte start-tag)) 1))
+      (define st-end   (extend-over-trailing-newline
+                         rope (- (rope-byte->char rope (tsnode-end-byte start-tag)) 1)))
       (define et-start (rope-byte->char rope (tsnode-start-byte end-tag)))
-      (define et-end   (- (rope-byte->char rope (tsnode-end-byte end-tag)) 1))
+      (define et-end   (extend-over-trailing-newline
+                         rope (- (rope-byte->char rope (tsnode-end-byte end-tag)) 1)))
       ;; Delete end tag first so start tag positions stay valid
       (replace-char-range! et-start et-end "")
       (replace-char-range! st-start st-end ""))))
