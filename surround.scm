@@ -75,18 +75,25 @@
 (define (ts-current-rope)
   (editor->text (ts-current-doc-id)))
 
-(define (find-ancestor-of-kind node kind)
+;; Node-kind sets covering both HTML-family (html/jsx/svelte/vue/xml) and rstml
+;; (Leptos view! macros) grammars, so tag ops work in either.
+(define *element-kinds*   '("element" "element_node"))
+(define *start-tag-kinds* '("start_tag" "open_tag"))
+(define *end-tag-kinds*   '("end_tag" "close_tag"))
+(define *tag-name-kinds*  '("tag_name" "node_identifier"))
+
+(define (find-ancestor-of-kind node kinds)
   (let loop ([n node])
     (cond
       [(not n) #f]
-      [(equal? (tsnode-kind n) kind) n]
+      [(member (tsnode-kind n) kinds) n]
       [else (loop (tsnode-parent n))])))
 
-(define (find-named-child node kind)
+(define (find-named-child node kinds)
   (let loop ([children (tsnode-named-children node)])
     (cond
       [(null? children) #f]
-      [(equal? (tsnode-kind (car children)) kind) (car children)]
+      [(member (tsnode-kind (car children)) kinds) (car children)]
       [else (loop (cdr children))])))
 
 ;; Extract the rope text covered by a TSNode as a string.
@@ -96,15 +103,19 @@
       (rope-byte->char rope (tsnode-start-byte node))
       (rope-byte->char rope (tsnode-end-byte node)))))
 
-;; Find the enclosing element node for the current cursor position.
+;; Find the enclosing element node for the current cursor position. Uses the
+;; tree of the injection layer at the cursor (via document->tree-byte-range) so
+;; it works inside Leptos view! macros (rstml), not just the primary layer.
 (define (enclosing-element)
   (define rope (ts-current-rope))
-  (define tree (document->tree (ts-current-doc-id)))
-  (and rope tree
+  (define doc-id (ts-current-doc-id))
+  (and rope
        (let* ([cb   (rope-char->byte rope (cursor-position))]
-              [root (tstree->root tree)]
-              [leaf (tsnode-named-descendant-byte-range root cb cb)])
-         (find-ancestor-of-kind leaf "element"))))
+              [tree (document->tree-byte-range doc-id cb cb)])
+         (and tree
+              (let* ([root (tstree->root tree)]
+                     [leaf (tsnode-named-descendant-byte-range root cb cb)])
+                (find-ancestor-of-kind leaf *element-kinds*))))))
 
 ;; Select a char range [start, end] (both inclusive) and replace with str.
 ;; Helix ranges are half-open (head/`to` is exclusive), so we pass end+1 to
@@ -131,8 +142,8 @@
   (define rope (ts-current-rope))
   (define element (enclosing-element))
   (when element
-    (define start-tag (find-named-child element "start_tag"))
-    (define end-tag   (find-named-child element "end_tag"))
+    (define start-tag (find-named-child element *start-tag-kinds*))
+    (define end-tag   (find-named-child element *end-tag-kinds*))
     (when (and start-tag end-tag)
       (define st-start (rope-byte->char rope (tsnode-start-byte start-tag)))
       (define st-end   (- (rope-byte->char rope (tsnode-end-byte start-tag)) 1))
@@ -148,11 +159,11 @@
   (define rope (ts-current-rope))
   (define element (enclosing-element))
   (when element
-    (define start-tag (find-named-child element "start_tag"))
-    (define end-tag   (find-named-child element "end_tag"))
+    (define start-tag (find-named-child element *start-tag-kinds*))
+    (define end-tag   (find-named-child element *end-tag-kinds*))
     (when (and start-tag end-tag)
-      (define st-name (find-named-child start-tag "tag_name"))
-      (define et-name (find-named-child end-tag   "tag_name"))
+      (define st-name (find-named-child start-tag *tag-name-kinds*))
+      (define et-name (find-named-child end-tag   *tag-name-kinds*))
       (when (and st-name et-name)
         ;; Capture all positions before opening the prompt
         (define st-start (rope-byte->char rope (tsnode-start-byte st-name)))
