@@ -167,6 +167,8 @@
       (cons line-start trailing-newline)   ; whole line + its newline
       (cons tag-start tag-end)))           ; just the tag
 
+;;@doc
+;; Delete the surrounding HTML/XML tag (dst).
 (define (surround-delete-tag)
   (define rope (ts-current-rope))
   (define element (enclosing-element))
@@ -186,6 +188,8 @@
 
 ;;; ---- cst — change surrounding HTML/XML tag name ----
 
+;;@doc
+;; Change the surrounding HTML/XML tag's name, prompting for the new name (cst).
 (define (surround-change-tag)
   (define rope (ts-current-rope))
   (define element (enclosing-element))
@@ -213,6 +217,8 @@
 
 ;;; ---- ds{char} — delete surrounding pair ----
 
+;;@doc
+;; Delete a surrounding pair or HTML/XML tag (ds{char} / dst).
 (define (vim-surround-delete)
   (on-key-callback
    (lambda (key-event)
@@ -236,6 +242,8 @@
 
 ;;; ---- cs{old}{new} — change surrounding pair ----
 
+;;@doc
+;; Change a surrounding pair or HTML/XML tag (cs{old}{new} / cst).
 (define (vim-surround-change)
   (on-key-callback
    (lambda (key-event)
@@ -280,6 +288,8 @@
 
 ;;; ---- S{char} / ys{motion}t — surround with HTML/XML tag ----
 
+;;@doc
+;; Wrap a char range with an HTML/XML tag, prompting for the tag name.
 (define (surround-wrap-tag start-pos end-pos)
   (push-component!
     (prompt "Tag: "
@@ -298,6 +308,8 @@
 
 ;;; ---- S{char} — surround visual selection (select mode) ----
 
+;;@doc
+;; Surround the current visual selection with a pair or HTML/XML tag (S{char} / St).
 (define (vim-surround-visual)
   (on-key-callback
    (lambda (key-event)
@@ -318,28 +330,64 @@
   (motion-fn)
   (vim-surround-visual))
 
+;;@doc
+;; Surround the inner word with a pair (ysiw{char}).
 (define (vim-surround-add-inner-word)          (vim-surround-add-with-motion select-inner-word))
+;;@doc
+;; Surround a word and its surrounding whitespace with a pair (ysaw{char}).
 (define (vim-surround-add-around-word)         (vim-surround-add-with-motion select-around-word))
+;;@doc
+;; Surround the inner WORD with a pair (ysiW{char}).
 (define (vim-surround-add-inner-long-word)     (vim-surround-add-with-motion select-inner-long-word))
+;;@doc
+;; Surround a WORD and its surrounding whitespace with a pair (ysaW{char}).
 (define (vim-surround-add-around-long-word)    (vim-surround-add-with-motion select-around-long-word))
+;;@doc
+;; Surround the inner paragraph with a pair (ysip{char}).
 (define (vim-surround-add-inner-paragraph)     (vim-surround-add-with-motion select-inner-paragraph))
+;;@doc
+;; Surround a paragraph and its surrounding blank lines with a pair (ysap{char}).
 (define (vim-surround-add-around-paragraph)    (vim-surround-add-with-motion select-around-paragraph))
+;;@doc
+;; Surround the contents of a { } block with a pair (ysi{{char}).
 (define (vim-surround-add-inner-curly)         (vim-surround-add-with-motion select-inner-curly))
+;;@doc
+;; Surround a { } block, including the braces, with a pair (ysa{{char}).
 (define (vim-surround-add-around-curly)        (vim-surround-add-with-motion select-around-curly))
+;;@doc
+;; Surround the contents of a ( ) block with a pair (ysi({char}).
 (define (vim-surround-add-inner-paren)         (vim-surround-add-with-motion select-inner-paren))
+;;@doc
+;; Surround a ( ) block, including the parens, with a pair (ysa({char}).
 (define (vim-surround-add-around-paren)        (vim-surround-add-with-motion select-around-paren))
+;;@doc
+;; Surround the contents of a [ ] block with a pair (ysi[{char}).
 (define (vim-surround-add-inner-square)        (vim-surround-add-with-motion select-inner-square))
+;;@doc
+;; Surround a [ ] block, including the brackets, with a pair (ysa[{char}).
 (define (vim-surround-add-around-square)       (vim-surround-add-with-motion select-around-square))
+;;@doc
+;; Surround the contents of a "double-quoted" string with a pair (ysi"{char}).
 (define (vim-surround-add-inner-double-quote)  (vim-surround-add-with-motion select-inner-double-quote))
+;;@doc
+;; Surround a "double-quoted" string, including the quotes, with a pair (ysa"{char}).
 (define (vim-surround-add-around-double-quote) (vim-surround-add-with-motion select-around-double-quote))
+;;@doc
+;; Surround the contents of a 'single-quoted' string with a pair (ysi'{char}).
 (define (vim-surround-add-inner-single-quote)  (vim-surround-add-with-motion select-inner-single-quote))
+;;@doc
+;; Surround a 'single-quoted' string, including the quotes, with a pair (ysa'{char}).
 (define (vim-surround-add-around-single-quote) (vim-surround-add-with-motion select-around-single-quote))
 
+;;@doc
+;; Surround from the cursor to the end of the word with a pair (yse{char}).
 (define (vim-surround-add-to-word-end)
   (helix.static.select_mode)
   (helix.static.extend_next_word_end)
   (vim-surround-visual))
 
+;;@doc
+;; Surround from the cursor to the end of the line with a pair (ys${char}).
 (define (vim-surround-add-to-line-end)
   (helix.static.select_mode)
   (helix.static.extend_to_line_end)
@@ -377,6 +425,8 @@
     ;; S{char} — surround visual selection
     (S ":vim-surround-visual"))))
 
+;;@doc
+;; Register all surround.hx keybindings globally (called once from init.scm).
 (define (set-surround-keybindings!)
   (add-global-keybinding surround-keybindings))
 
